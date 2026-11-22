@@ -4,20 +4,17 @@ import os
 import subprocess
 import sys
 import tempfile
+import argparse
 
 ROOT = Path(__file__).resolve().parent
 
 
 def main():
-    dev_id = os.environ.get('SCREENSCRAPER_DEV_ID', '')
-    dev_password = os.environ.get('SCREENSCRAPER_DEV_PASSWORD', '')
-    if not dev_id or not dev_password:
-        raise SystemExit('Set SCREENSCRAPER_DEV_ID and SCREENSCRAPER_DEV_PASSWORD before building.')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--output', default=str(ROOT / 'release'))
+    args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='scraper-build-') as folder:
         private = Path(folder)
-        # Bundled bytecode avoids accidental source publication, not extraction.
-        (private / '_application_credentials.py').write_text(
-            f'DEV_ID = {dev_id!r}\nDEV_PASSWORD = {dev_password!r}\n', encoding='utf-8')
         spec = f'''
 from pathlib import Path
 import PySide6
@@ -31,7 +28,7 @@ a = Analysis([str(root / 'UltimateScraperStudio.py')],
            (str(root / 'Gamersicon-HD.png'), '.'),
            (str(root / 'studio_logo_hd.ico'), '.'),
            (str(root / 'app_icon.ico'), '.')],
-    hiddenimports=['_application_credentials', 'requests', 'xml.etree.ElementTree',
+    hiddenimports=['relay_client', 'requests', 'xml.etree.ElementTree',
                    'sqlite3', 'tempfile', 'zlib', 'hashlib', 'ctypes', 'winsound']
                   + collect_submodules('tkinter') + collect_submodules('PIL'),
     excludes=[], noarchive=False)
@@ -55,7 +52,7 @@ exe = EXE(pyz, a.scripts, a.binaries, a.datas, [],
         spec_path = private / 'PublicStudio.spec'
         spec_path.write_text(spec, encoding='utf-8')
         subprocess.run([sys.executable, '-m', 'PyInstaller', '--noconfirm', '--clean',
-                        '--distpath', str(ROOT / 'release'),
+                        '--distpath', str(Path(args.output).resolve()),
                         '--workpath', str(ROOT / 'build'), str(spec_path)], check=True)
 
 

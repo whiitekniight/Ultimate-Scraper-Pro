@@ -65,7 +65,7 @@ class StudioWindow(base.ScraperQtWindow):
         self.setStyleSheet(STYLE if self.dark_mode.isChecked() else base.LIGHT_QSS + '\nQLabel, QCheckBox { background:transparent; } QTextEdit#LogBox { font-family:"Consolas"; font-size:11pt; }')
     def _build_ui(self):
         super()._build_ui()
-        self.setWindowTitle('Ultimate Scraper pro • Studio 1.1.0')
+        self.setWindowTitle('Ultimate Scraper pro • Studio 1.2.0')
         header=self.findChild(QFrame,'Header')
         header.setFixedHeight(160)
         header.layout().setContentsMargins(18, 14, 18, 14)
@@ -113,7 +113,7 @@ class StudioWindow(base.ScraperQtWindow):
         accounts_tab=QWidget()
         accounts_layout=QVBoxLayout(accounts_tab)
         accounts_layout.addWidget(account)
-        tip=QLabel('Sign in once. Your account details stay on this PC.\nThe official build includes ScreenScraper application access. Enter your own account above.')
+        tip=QLabel('Sign in once. Your account details stay on this PC.\nYour login is sent securely through the scraper service. Developer credentials stay on the server.')
         tip.setObjectName('MutedLabel'); tip.setWordWrap(True)
         accounts_layout.addWidget(tip); accounts_layout.addStretch()
         self.tabs.insertTab(3,accounts_tab,'Accounts')

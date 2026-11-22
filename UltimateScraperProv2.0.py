@@ -540,15 +540,18 @@ def get_logo_for_system(system_id, system_key):
     print(f"[LOGO DEBUG] No local logo found for {brand}")
     return None
 
-# Application credentials are injected only into the official binary at build time.
-# Public source builds can use their own approved application credentials.
-try:
-    from _application_credentials import DEV_ID, DEV_PASSWORD
-except ImportError:
-    DEV_ID = os.environ.get("SCREENSCRAPER_DEV_ID", "")
-    DEV_PASSWORD = os.environ.get("SCREENSCRAPER_DEV_PASSWORD", "")
-SOFTNAME = "UltimateScraperPro 1.1.0"
-APP_VERSION = "1.1.0"
+# Developer credentials live only on the relay server, never in this client.
+from relay_client import RelayClient, RelayClientError
+SOFTNAME = "UltimateScraperPro 1.2.0"
+APP_VERSION = "1.2.0"
+_relay_client = None
+
+def relay_client():
+    global _relay_client
+    if _relay_client is None:
+        _relay_client = RelayClient()
+    return _relay_client
+
 CONFIG_FILE = os.path.join(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
                            "UltimateScraperPro", "settings.json")
 
@@ -2248,46 +2251,22 @@ class ScreenScraperError(RuntimeError):
 
 
 def _screenscraper_params(cfg):
-    if not DEV_ID or not DEV_PASSWORD:
-        raise ScreenScraperError("Application API credentials are missing. Install the official Windows release, or configure your own developer credentials for a source build.")
     if not cfg.get("ssid", "").strip() or not cfg.get("sspassword", ""):
         raise ScreenScraperError("Enter your own ScreenScraper username and password in Accounts, then select Validate.")
-    return {"devid": DEV_ID, "devpassword": DEV_PASSWORD, "softname": SOFTNAME,
-            "output": "json", "ssid": cfg["ssid"].strip(), "sspassword": cfg["sspassword"]}
+    return {"ssid": cfg["ssid"].strip(), "sspassword": cfg["sspassword"]}
 
 
 def _screenscraper_request(endpoint, params, allow_not_found=False):
-    # Only the service's HTTPS API receives credentials. Never follow redirects
-    # with credential-bearing requests, or echo bodies / exceptions into logs.
     try:
-        resp = requests.get("https://api.screenscraper.fr/api2/" + endpoint,
-                            params=params, timeout=(10, 45), allow_redirects=False)
-    except requests.exceptions.Timeout:
-        raise ScreenScraperError("ScreenScraper timed out. Please try again shortly.") from None
-    except requests.exceptions.RequestException:
-        raise ScreenScraperError("Could not securely connect to ScreenScraper. Check your connection and try again.") from None
-    if resp.status_code == 404 and allow_not_found:
-        return None
-    if resp.status_code == 429:
-        raise ScreenScraperError("ScreenScraper's request limit was reached. Wait before trying again.")
-    if resp.status_code >= 500:
-        raise ScreenScraperError("ScreenScraper is temporarily unavailable. Please try again later.")
-    if resp.status_code != 200:
-        if resp.status_code in (400, 401, 403):
-            raise ScreenScraperError("ScreenScraper rejected authentication. Check your account login; the application API authorization may also need attention.")
-        raise ScreenScraperError(f"ScreenScraper returned HTTP {resp.status_code}. Please try again later.")
-    try:
-        try:
-            data = resp.json()
-        except ValueError:
-            fixed = re.sub(r'\\(?![\"\\/bfnrtu])', r'\\\\', resp.text)
-            data = json.loads(fixed)
-    except (ValueError, TypeError):
-        raise ScreenScraperError("ScreenScraper returned an unreadable response. Check your login or try again later.") from None
-    response = data.get("response") if isinstance(data, dict) else None
-    if not isinstance(response, dict) or response.get("error") or data.get("error"):
-        raise ScreenScraperError("ScreenScraper rejected the request. Check your account and service availability.")
-    return data
+        cfg = {key: params[key] for key in ("ssid", "sspassword")}
+        if endpoint == "ssuserInfos.php":
+            return relay_client().user(cfg)
+        if endpoint == "jeuInfos.php":
+            fields = {k: v for k, v in params.items() if k not in ("ssid", "sspassword")}
+            return relay_client().game(cfg, fields)
+        raise ScreenScraperError("Unsupported scraper operation.")
+    except RelayClientError as exc:
+        raise ScreenScraperError(str(exc)) from None
 
 
 def fetch_screenscraper_user_info(cfg):
@@ -2313,15 +2292,6 @@ def fetch_screenscraper_user_info(cfg):
     except ScreenScraperError as exc:
         cfg["_screenscraper_error"] = str(exc)
         return None
-
-
-def build_jeuinfos_url(cfg, rom_name, system_id, rom_path=None):
-    from urllib.parse import urlencode
-    params = _screenscraper_params(cfg)
-    params.update(romnom=rom_name, systemeid=str(system_id or "0"), romtype="rom")
-    if rom_path and os.path.isfile(rom_path):
-        params.update(compute_file_hashes(rom_path))
-    return "https://api.screenscraper.fr/api2/jeuInfos.php?" + urlencode(params)
 
 
 def compute_file_hashes(path, chunk_size=65536):

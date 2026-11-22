@@ -514,11 +514,11 @@ class ScraperQtWindow(QMainWindow):
         text.setReadOnly(True)
         text.setObjectName("AboutBox")
         text.setText(
-            "Ultimate Scraper pro Studio 1.1.0\n\n"
+            "Ultimate Scraper pro Studio 1.2.0\n\n"
             "Qt front end for the existing scraper engine.\n\n"
             "Set your ScreenScraper account, choose ROM and output folders, "
             "pick a layout preset, choose media types, then start scraping.\n\n"
-            "Official Windows builds include application API access. Enter your own ScreenScraper login in Accounts. Optional EmuMovies access requires your own API key in the EMUMOVIES_API_KEY environment variable."
+            "ScreenScraper developer credentials stay on the relay server. Enter your own ScreenScraper login in Accounts. Optional EmuMovies access requires your own API key in the EMUMOVIES_API_KEY environment variable."
         )
         layout.addWidget(text)
         return tab

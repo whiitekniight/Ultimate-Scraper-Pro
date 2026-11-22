@@ -1,57 +1,39 @@
-# Ultimate Scraper pro Studio 1.1.0
+# Ultimate Scraper pro Studio 1.2.0
 
-Windows artwork, video, manual and metadata scraper for retro game collections.
+A Windows scraper for retro game artwork, videos, manuals and metadata.
 
-## Download and start
+## Use the app
 
-Download **Ultimate-Scraper-Pro-Studio-v1.1.0.zip** from
-[Releases](https://github.com/whiitekniight/Ultimate-Scraper-Pro/releases/latest),
-extract it, and run **Ultimate-Scraper-Pro-Studio.exe**. Python is not required.
+Download the official Windows ZIP from [Releases](https://github.com/whiitekniight/Ultimate-Scraper-Pro/releases), extract it, and run **Ultimate-Scraper-Pro-Studio.exe**.
+Open **Accounts**, enter your own ScreenScraper **username** and password, and select **Validate**. Choose your ROM/output folders and try **Test one ROM** before starting a batch.
 
-Open **Accounts**, enter **your own ScreenScraper username and password**, and
-select **Validate**. Official Windows binaries include application API access;
-users do not need developer credentials. Choose your ROM folder and output folder,
-then use **Test one ROM** before starting a batch. The app observes your account's
-reported thread limit.
+## Server connection and privacy
 
-## Changes in 1.1.0
+Starting with 1.2.0, the app uses a restricted HTTPS relay. **ScreenScraper developer credentials are not in the Windows app, its source, or its download.** They are configured only on the operator's server.
 
-- Restored application authentication missing from the previous public binary.
-- Uses ScreenScraper's documented HTTPS API address for login and game lookup.
-- Reports connection, authentication, rate-limit and service failures instead of
-  incorrectly treating them as games missing from the database.
-- Preserves ROM filenames for hash searches, with original-name and cleaned-name
-  fallbacks. Supports special characters in account passwords.
-- Includes the Studio interface and console artwork.
-- Starts without the author's account, saved folders, profiles or settings.
+Your ScreenScraper username and password are sent over HTTPS to the relay to validate your account and make requests on your behalf. The relay keeps them in memory for at most 30 minutes and does not persist them or log request bodies. Restarting the relay discards its sessions. The client renews expired sessions automatically.
 
-## Privacy and application credentials
+The relay forwards only supported login, game lookup and media operations to ScreenScraper. It enforces request and concurrency limits, discards upstream request headers, and replaces ScreenScraper media URLs with random, expiring relay links. Download links do not expose developer credentials.
 
-Personal login and settings are never shipped. Each user's settings are saved in
-`%LOCALAPPDATA%\UltimateScraperPro\settings.json`; the public app does not import
-settings from the author's personal Studio folder or the legacy scraper config.
-Passwords are saved locally in that file: treat it as private and do not share it.
-Login requests use HTTPS, do not follow redirects, and do not log credentials,
-request URLs, response bodies or complete account records.
+Personal settings are not shipped. Your own settings are saved in `%LOCALAPPDATA%\UltimateScraperPro\settings.json`. This local file includes your own account password; keep it private.
 
-Developer credentials are excluded from this repository and injected into official
-Windows builds during packaging. A desktop binary cannot keep an embedded secret
-safe from a determined person who inspects or modifies it. Packaging is not a
-security boundary. Keeping application credentials truly private requires a
-server-side service with authentication, request limits and monitoring.
+The service must be online for ScreenScraper scraping and downloads to work. The app reports service outages and rate limits. A modified client cannot retrieve the developer password from the relay, although compromised server administration could expose it. Previously distributed copies of developer credentials must be revoked at ScreenScraper; moving them to a server does not invalidate old copies.
 
-EmuMovies is optional and requires your own authorized application API key through
-`EMUMOVIES_API_KEY`, plus your own EmuMovies login. No third-party application key
-or personal media repository is bundled.
+Optional EmuMovies access still requires your own authorized application API key through `EMUMOVIES_API_KEY` and your own EmuMovies login.
 
-## Run or build from source
+## Build from source
 
-Install Python 3.12 and run `py -3.12 -m pip install -r requirements.txt`.
-Set `SCREENSCRAPER_DEV_ID` and `SCREENSCRAPER_DEV_PASSWORD` to your approved
-application credentials in your local environment, then run
-`py -3.12 UltimateScraperStudio.py` or `build_exe.bat`.
+Install Python 3.12 and `py -3.12 -m pip install -r requirements.txt`, then run `py -3.12 UltimateScraperStudio.py` or `build_exe.bat`.
+No developer credentials are required or accepted by the desktop build.
 
-Obtain application access through the [ScreenScraper team](https://www.screenscraper.fr/webapi2.php).
-Do not commit developer credentials, personal config files, logs, or build folders.
+The relay address is configured in `relay_client.py`. `SCREENSCRAPER_RELAY_URL` can override it for testing. HTTPS is mandatory except for local loopback development tests.
 
-Run regression checks with `py -3.12 -m unittest discover -s tests -v`.
+## Self-host the relay
+
+See [relay/README.md](relay/README.md). Server dependencies are separate from the desktop requirements, and the server is not bundled into the Windows executable.
+
+Run relay regression tests after installing `relay/requirements.txt`:
+
+```
+py -3.12 -m unittest discover -s tests -v
+```
