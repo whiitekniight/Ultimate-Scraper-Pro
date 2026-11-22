@@ -1,14 +1,13 @@
 __pycache__/
 *.pyc
-
-# Local build output
 build/
 dist/
-package/
 release/
-*.spec
 *.exe
 *.zip
-
-# Private local config. Do not publish user credentials/settings.
-screenscraper_scraper_config.json
+settings.json
+*config.json
+*.log
+_application_credentials.py
+_application_credentials.*
+.env

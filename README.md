@@ -1,57 +1,57 @@
-# Ultimate Scraper pro
+# Ultimate Scraper pro Studio 1.1.0
 
-Ultimate Scraper pro is a Windows app for scraping retro game artwork, videos,
-manuals, metadata, and `gamelist.xml` files.
+Windows artwork, video, manual and metadata scraper for retro game collections.
 
-## Download
+## Download and start
 
-Prebuilt Windows downloads are available on the Releases page:
+Download **Ultimate-Scraper-Pro-Studio-v1.1.0.zip** from
+[Releases](https://github.com/whiitekniight/Ultimate-Scraper-Pro/releases/latest),
+extract it, and run **Ultimate-Scraper-Pro-Studio.exe**. Python is not required.
 
-https://github.com/whiitekniight/Ultimate-Scraper-Pro/releases
+Open **Accounts**, enter **your own ScreenScraper username and password**, and
+select **Validate**. Official Windows binaries include application API access;
+users do not need developer credentials. Choose your ROM folder and output folder,
+then use **Test one ROM** before starting a batch. The app observes your account's
+reported thread limit.
 
-The repository contains the source code used to build the EXE. The EXE itself is
-published as a release asset so users can download it without installing Python.
+## Changes in 1.1.0
 
-## Features
+- Restored application authentication missing from the previous public binary.
+- Uses ScreenScraper's documented HTTPS API address for login and game lookup.
+- Reports connection, authentication, rate-limit and service failures instead of
+  incorrectly treating them as games missing from the database.
+- Preserves ROM filenames for hash searches, with original-name and cleaned-name
+  fallbacks. Supports special characters in account passwords.
+- Includes the Studio interface and console artwork.
+- Starts without the author's account, saved folders, profiles or settings.
 
-- Download box art, screenshots, logos, videos, manuals, fanart, and metadata.
-- Build `gamelist.xml` files for RetroBat, EmulationStation-style folders, and
-  other frontends.
-- Choose output folders and customize output image filename patterns.
-- Save reusable system profiles.
-- Auto-detect platforms from ROM folders.
-- Test one ROM before scraping a full folder.
-- Choose exactly which media types to download.
+## Privacy and application credentials
 
-## Build From Source
+Personal login and settings are never shipped. Each user's settings are saved in
+`%LOCALAPPDATA%\UltimateScraperPro\settings.json`; the public app does not import
+settings from the author's personal Studio folder or the legacy scraper config.
+Passwords are saved locally in that file: treat it as private and do not share it.
+Login requests use HTTPS, do not follow redirects, and do not log credentials,
+request URLs, response bodies or complete account records.
 
-Install Python, then run:
+Developer credentials are excluded from this repository and injected into official
+Windows builds during packaging. A desktop binary cannot keep an embedded secret
+safe from a determined person who inspects or modifies it. Packaging is not a
+security boundary. Keeping application credentials truly private requires a
+server-side service with authentication, request limits and monitoring.
 
-```bat
-pip install -r requirements.txt
-build_exe.bat
-```
+EmuMovies is optional and requires your own authorized application API key through
+`EMUMOVIES_API_KEY`, plus your own EmuMovies login. No third-party application key
+or personal media repository is bundled.
 
-The build script creates the Windows EXE using PyInstaller.
+## Run or build from source
 
-## Developer/API Credentials
+Install Python 3.12 and run `py -3.12 -m pip install -r requirements.txt`.
+Set `SCREENSCRAPER_DEV_ID` and `SCREENSCRAPER_DEV_PASSWORD` to your approved
+application credentials in your local environment, then run
+`py -3.12 UltimateScraperStudio.py` or `build_exe.bat`.
 
-Private developer credentials are not included in this repository.
+Obtain application access through the [ScreenScraper team](https://www.screenscraper.fr/webapi2.php).
+Do not commit developer credentials, personal config files, logs, or build folders.
 
-Before running or building from source, set your own local environment variables:
-
-```bat
-set SCREENSCRAPER_DEV_ID=your_dev_id
-set SCREENSCRAPER_DEV_PASSWORD=your_dev_password
-set SCREENSCRAPER_SOFTNAME=your_softname
-set EMUMOVIES_API_KEY=your_emumovies_api_key
-```
-
-Users still enter their own ScreenScraper and EmuMovies account credentials in
-the app UI. Those user credentials are saved locally on their own PC.
-
-## Privacy
-
-User settings and ScreenScraper login details are saved locally on the user's own
-PC in a config file outside this repository. That config file is not included in
-this repo or in the release download.
+Run regression checks with `py -3.12 -m unittest discover -s tests -v`.
