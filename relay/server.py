@@ -282,6 +282,14 @@ def create_app(settings=None, upstream=None, clock=time.monotonic):
     if settings is None:
         settings = json.loads(Path(os.environ.get('RELAY_SECRETS_FILE', '/run/secrets/screenscraper.json')).read_text())
     relay = Relay(settings, upstream, clock)
+    if clock is time.monotonic:
+        def expire_idle_sessions():
+            while True:
+                time.sleep(10)
+                with relay.lock:
+                    relay.cleanup()
+        threading.Thread(target=expire_idle_sessions, daemon=True,
+                         name='relay-session-cleanup').start()
     app = Flask(__name__)
     app.config['MAX_CONTENT_LENGTH'] = 16384
     app.extensions['relay'] = relay

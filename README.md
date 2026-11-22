@@ -11,7 +11,7 @@ Open **Accounts**, enter your own ScreenScraper **username** and password, and s
 
 Starting with 1.2.0, the app uses a restricted HTTPS relay. **ScreenScraper developer credentials are not in the Windows app, its source, or its download.** They are configured only on the operator's server.
 
-Your ScreenScraper username and password are sent over HTTPS to the relay to validate your account and make requests on your behalf. The relay keeps them in memory for at most 30 minutes and does not persist them or log request bodies. Restarting the relay discards its sessions. The client renews expired sessions automatically.
+Your ScreenScraper username and password are sent over HTTPS to the relay to validate your account and make requests on your behalf. The relay keeps them in memory for a 30-minute session, then clears expired sessions within 10 seconds and does not persist them or log request bodies. Restarting the relay discards its sessions. The client renews expired sessions automatically.
 
 The relay forwards only supported login, game lookup and media operations to ScreenScraper. It enforces request and concurrency limits, discards upstream request headers, and replaces ScreenScraper media URLs with random, expiring relay links. Download links do not expose developer credentials.
 

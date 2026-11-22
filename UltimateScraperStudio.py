@@ -113,7 +113,7 @@ class StudioWindow(base.ScraperQtWindow):
         accounts_tab=QWidget()
         accounts_layout=QVBoxLayout(accounts_tab)
         accounts_layout.addWidget(account)
-        tip=QLabel('Sign in once. Your account details stay on this PC.\nYour login is sent securely through the scraper service. Developer credentials stay on the server.')
+        tip=QLabel('Sign in with your own ScreenScraper account.\nYour login is sent securely through the scraper service. Developer credentials stay on the server.')
         tip.setObjectName('MutedLabel'); tip.setWordWrap(True)
         accounts_layout.addWidget(tip); accounts_layout.addStretch()
         self.tabs.insertTab(3,accounts_tab,'Accounts')
