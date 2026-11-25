@@ -28,7 +28,7 @@ a = Analysis([str(root / 'UltimateScraperStudio.py')],
            (str(root / 'Gamersicon-HD.png'), '.'),
            (str(root / 'studio_logo_hd.ico'), '.'),
            (str(root / 'app_icon.ico'), '.')],
-    hiddenimports=['relay_client', 'requests', 'xml.etree.ElementTree',
+    hiddenimports=['relay_client', 'media_download', 'requests', 'xml.etree.ElementTree',
                    'sqlite3', 'tempfile', 'zlib', 'hashlib', 'ctypes', 'winsound']
                   + collect_submodules('tkinter') + collect_submodules('PIL'),
     excludes=[], noarchive=False)

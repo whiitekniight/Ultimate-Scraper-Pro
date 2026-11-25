@@ -542,8 +542,8 @@ def get_logo_for_system(system_id, system_key):
 
 # Developer credentials live only on the relay server, never in this client.
 from relay_client import RelayClient, RelayClientError
-SOFTNAME = "UltimateScraperPro 1.2.0"
-APP_VERSION = "1.2.0"
+SOFTNAME = "UltimateScraperPro 1.2.1"
+APP_VERSION = "1.2.1"
 _relay_client = None
 
 def relay_client():
@@ -2429,15 +2429,12 @@ def pick_media_url(medias, desired_types, preferred_regions=None):
     return None
 
 
-def download_binary(url, output_path):
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+def download_binary(url, output_path, on_retry=None):
+    from media_download import download_media, MediaDownloadError
     try:
-        resp = requests.get(url, timeout=60)
-        resp.raise_for_status()
-    except requests.exceptions.RequestException:
-        raise ScreenScraperError("Media download failed. Check the service and try again.") from None
-    with open(output_path, "wb") as f:
-        f.write(resp.content)
+        download_media(url, output_path, on_retry=on_retry)
+    except MediaDownloadError as exc:
+        raise ScreenScraperError(str(exc)) from None
 
 
 # ---------- METADATA HELPERS FOR GAMELIST ----------
@@ -3238,7 +3235,8 @@ def scrape_worker(cfg, rom_folder, output_folder, system_id, system_name,
 
             try:
                 log_queue.put(f"  {media_key}: downloading from {media_source}\n")
-                download_binary(media_url, out_path)
+                download_binary(media_url, out_path, on_retry=lambda attempt, delay:
+                    log_queue.put(f"  {media_key}: temporary download failure; retry {attempt}/3 in {delay}s.\n"))
                 stats_inc("downloaded")
                 any_media_found = True
             except Exception as e:

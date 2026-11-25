@@ -1,4 +1,4 @@
-# Ultimate Scraper pro Studio 1.2.0
+# Ultimate Scraper pro Studio 1.2.1
 
 A Windows scraper for retro game artwork, videos, manuals and metadata.
 
@@ -6,6 +6,13 @@ A Windows scraper for retro game artwork, videos, manuals and metadata.
 
 Download the official Windows ZIP from [Releases](https://github.com/whiitekniight/Ultimate-Scraper-Pro/releases), extract it, and run **Ultimate-Scraper-Pro-Studio.exe**.
 Open **Accounts**, enter your own ScreenScraper **username** and password, and select **Validate**. Choose your ROM/output folders and try **Test one ROM** before starting a batch.
+
+## Changes in 1.2.1
+
+- Supports six simultaneous media downloads, with a short wait when all download slots are occupied.
+- Accepts ScreenScraper manual downloads after verifying their PDF signature.
+- Retries temporary busy responses, rate limits, and interrupted transfers up to four attempts.
+- Streams downloads to temporary files and renames them only after a complete transfer, preventing incomplete files from being skipped on a later scrape.
 
 ## Server connection and privacy
 

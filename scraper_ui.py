@@ -514,7 +514,7 @@ class ScraperQtWindow(QMainWindow):
         text.setReadOnly(True)
         text.setObjectName("AboutBox")
         text.setText(
-            "Ultimate Scraper pro Studio 1.2.0\n\n"
+            "Ultimate Scraper pro Studio 1.2.1\n\n"
             "Qt front end for the existing scraper engine.\n\n"
             "Set your ScreenScraper account, choose ROM and output folders, "
             "pick a layout preset, choose media types, then start scraping.\n\n"

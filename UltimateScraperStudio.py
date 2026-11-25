@@ -65,7 +65,7 @@ class StudioWindow(base.ScraperQtWindow):
         self.setStyleSheet(STYLE if self.dark_mode.isChecked() else base.LIGHT_QSS + '\nQLabel, QCheckBox { background:transparent; } QTextEdit#LogBox { font-family:"Consolas"; font-size:11pt; }')
     def _build_ui(self):
         super()._build_ui()
-        self.setWindowTitle('Ultimate Scraper pro • Studio 1.2.0')
+        self.setWindowTitle('Ultimate Scraper pro • Studio 1.2.1')
         header=self.findChild(QFrame,'Header')
         header.setFixedHeight(160)
         header.layout().setContentsMargins(18, 14, 18, 14)

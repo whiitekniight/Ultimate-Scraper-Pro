@@ -1,5 +1,6 @@
 """Restricted ScreenScraper relay. Run one process: sessions stay in RAM only."""
 from collections import OrderedDict, deque
+from itertools import chain
 from dataclasses import dataclass
 from pathlib import Path
 import hashlib
@@ -43,7 +44,7 @@ class Relay:
         self.rates = OrderedDict()
         self.active = {}
         self.slots = threading.BoundedSemaphore(6)
-        self.download_slots = threading.BoundedSemaphore(4)
+        self.download_slots = threading.BoundedSemaphore(6)
         self.ttl = 1800
 
     def cleanup(self):
@@ -73,7 +74,7 @@ class Relay:
 
     def parameters(self, username, password):
         return dict(devid=self.dev_id, devpassword=self.dev_password,
-                    softname='UltimateScraperPro Relay 1.2.0', output='json',
+                    softname='UltimateScraperPro Relay 1.2.1', output='json',
                     ssid=username, sspassword=password)
 
     def api(self, endpoint, params, not_found=False):
@@ -239,43 +240,63 @@ class Relay:
         session = self.session(token)
         self.rate(('media', self.account_key(session.username)), 300)
         self.rate(('media-ip', ip), 400)
-        if not self.download_slots.acquire(blocking=False):
+        if not self.download_slots.acquire(timeout=5):
             raise RelayError('Media downloads are busy. Please try again shortly.', 503)
+        reply = None
         try:
             reply = self.upstream(url, timeout=(8, 60), allow_redirects=False, stream=True)
+            if reply.status_code == 429:
+                raise RelayError('ScreenScraper request limit reached. Please wait.', 429)
             if reply.status_code != 200:
-                reply.close()
                 raise RelayError('ScreenScraper could not supply this media.', 502)
-            content_type = reply.headers.get('Content-Type', '').split(';')[0].lower()
+            content_type = reply.headers.get('Content-Type', '').split(';')[0].strip().lower()
+            stream = reply.iter_content(65536)
+            first_chunk = next(stream, b'')
+            if not first_chunk:
+                raise RelayError('ScreenScraper returned an empty media file.')
+            if content_type in ('application/force-download', 'application/x-download', 'application/download', 'application/x-pdf'):
+                if not first_chunk.lstrip().startswith(b'%PDF-'):
+                    raise RelayError('ScreenScraper returned an unsupported media response.')
+                content_type = 'application/pdf'
             if not (content_type.startswith(('image/', 'video/', 'audio/')) or content_type in ('application/pdf', 'application/octet-stream')):
-                reply.close()
                 raise RelayError('ScreenScraper returned an unsupported media response.')
             limit = 512 * 1024 * 1024
             if int(reply.headers.get('Content-Length', '0')) > limit:
-                reply.close()
                 raise RelayError('This media file exceeds the download limit.', 413)
         except Exception as exc:
+            if reply is not None:
+                reply.close()
             self.download_slots.release()
             if isinstance(exc, RelayError):
                 raise
             raise RelayError('Could not securely download media from ScreenScraper.') from None
+        finished = False
+        finish_lock = threading.Lock()
+        def finish():
+            nonlocal finished
+            with finish_lock:
+                if not finished:
+                    finished = True
+                    reply.close()
+                    self.download_slots.release()
         def chunks():
             size = 0
             try:
-                for chunk in reply.iter_content(65536):
+                for chunk in chain((first_chunk,), stream):
                     size += len(chunk)
                     if size > limit:
-                        break
+                        raise RuntimeError('Media exceeded the download size limit.')
                     yield chunk
             except requests.RequestException:
-                return
+                raise RuntimeError('Media stream was interrupted.') from None
             finally:
-                reply.close()
-                self.download_slots.release()
+                finish()
         headers = {'Content-Type': content_type}
-        if reply.headers.get('Content-Length', '').isdigit():
+        if not reply.headers.get('Content-Encoding') and reply.headers.get('Content-Length', '').isdigit():
             headers['Content-Length'] = reply.headers['Content-Length']
-        return Response(chunks(), headers=headers)
+        response = Response(chunks(), headers=headers)
+        response.call_on_close(finish)
+        return response
 
 
 def create_app(settings=None, upstream=None, clock=time.monotonic):
@@ -310,7 +331,10 @@ def create_app(settings=None, upstream=None, clock=time.monotonic):
         else:
             # Never log exceptions: request objects and URLs may contain secrets.
             message, status = 'The scraper service could not complete this request.', 500
-        return jsonify(error=message), status
+        response = jsonify(error=message)
+        if status in (429, 503):
+            response.headers['Retry-After'] = '2'
+        return response, status
 
     def ip():
         # Trust this only when the origin is reachable exclusively by our tunnel.
@@ -320,7 +344,7 @@ def create_app(settings=None, upstream=None, clock=time.monotonic):
 
     @app.get('/health')
     def health():
-        return jsonify(status='ok', service='ultimate-scraper-relay', version='1.2.0')
+        return jsonify(status='ok', service='ultimate-scraper-relay', version='1.2.1')
 
     @app.post('/v1/session')
     def login():
@@ -351,7 +375,7 @@ def create_app(settings=None, upstream=None, clock=time.monotonic):
 if __name__ == '__main__':
     from waitress import serve
     serve(create_app(), host=os.environ.get('RELAY_BIND', '127.0.0.1'),
-          port=int(os.environ.get('RELAY_PORT', '8080')), threads=12,
+          port=int(os.environ.get('RELAY_PORT', '8080')), threads=18,
           connection_limit=64, channel_timeout=60,
           max_request_body_size=16384, max_request_header_size=16384,
           expose_tracebacks=False, ident='ScraperRelay')

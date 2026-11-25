@@ -1,6 +1,6 @@
 # ScreenScraper relay
 
-Use a single Waitress process with 12 threads. Sessions and media capabilities live only in memory, so multiple independent workers must not be used without a shared session store.
+Use a single Waitress process with 18 threads. Sessions and media capabilities live only in memory, so multiple independent workers must not be used without a shared session store.
 
 ## Configuration
 
